@@ -1,0 +1,23 @@
+FROM node:14-alpine
+
+WORKDIR /abb
+
+COPY ./services/package.json .
+COPY ./services/packages/server/shared.json ./packages/shared/
+COPY ./services/packages/common/db.json ./packages/db/
+COPY ./services/packages/common/auth.json ./packages/auth/
+
+RUN yarn install
+RUN yarn install --production
+
+COPY ./packages/shared/dist ./packages/shared/dist
+COPY ./packages/db/dist ./packages/db/dist
+COPY ./packages/auth/dist ./packages/auth/dist
+
+WORKDIR ./packages/server
+
+ENV NODE_ENV production
+
+EXPOSE 4000
+
+CMD ["node", "dist/index.js"]

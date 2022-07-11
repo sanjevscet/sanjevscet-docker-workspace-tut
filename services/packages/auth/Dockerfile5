@@ -1,0 +1,58 @@
+# FROM goavega/nodex:fermium
+FROM node:14-alpine
+
+ENV APP_DIR /var/www/
+ENV APP_DIR1 /var/www
+ENV BUILD_DIR /home/www/
+WORKDIR ${BUILD_DIR}
+
+RUN set -ex && \
+    apk add --no-cache --virtual build-deps alpine-sdk python3
+COPY ./services/packages/shared/ ${BUILD_DIR}/packages/shared/
+COPY ./services/packages/db/ ${BUILD_DIR}/packages/db/
+COPY ./services/packages/auth/ ${BUILD_DIR}/packages/auth/
+COPY ./services/*.json ${BUILD_DIR}
+COPY ./services/*.js ${BUILD_DIR}
+COPY ./services/yarn.lock ${BUILD_DIR}
+
+WORKDIR ${BUILD_DIR}
+
+RUN set -ex && \
+    rm -rf ./packages/shared/dist/ && \
+    rm -rf ./packages/db/dist/ && \
+    echo "setting up server..." && \
+    yarn install && \
+    yarn workspace @san/shared run build && \
+    yarn workspace @san/db run build && \
+    yarn workspace auth run build && \
+    cp -r ./packages/auth/dist/ ${APP_DIR} && \
+    rm -rf ./node_modules/@san/shared && \
+    rm -rf ./node_modules/@san/db && \
+    cp -r ./node_modules ${APP_DIR}
+WORKDIR ${BUILD_DIR}/packages
+RUN set -ex && \
+    # yarn workspace @san/db run build && \
+    mkdir ${APP_DIR}node_modules/@san/db && \
+    cp -r ./db/dist/* ${APP_DIR}node_modules/@san/db/
+RUN set -ex && \
+    # yarn workspace @san/shared run build && \
+    mkdir ${APP_DIR}node_modules/@san/shared && \
+    cp -r ./shared/dist/* ${APP_DIR}node_modules/@san/shared/
+# RUN set -ex && \
+#     # yarn workspace @san/db run build && \
+#     mkdir ${APP_DIR}node_modules/@san/db && \
+#     cp -r ./db/dist/* ${APP_DIR}node_modules/@san/db/
+# WORKDIR ${APP_DIR1}
+
+# CMD [ "node" ]
+CMD [ "node", "/var/www/index.js" ]
+
+# RUN set -ex && \
+#     echo "fixing supervisor start script" && \
+#     sed -i -e "s,index.js,dist/index.js,g" ${SUPERVISOR_CONF_FILE} && \
+#     echo "fixing nginx conf" && \
+#     sed -i -e "s,/var/www/;,/var/www/public/;,g" /etc/nginx/conf.d/default.conf && \
+#     sed -i -e "s,localhost:3000,localhost:4201,g" /etc/nginx/conf.d/default.conf && \
+#     echo "removing build files" && \
+#     rm -rf /home/www/ && \
+#     echo "all done."

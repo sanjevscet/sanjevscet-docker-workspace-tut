@@ -1,0 +1,32 @@
+FROM node:14-alpine
+
+WORKDIR /abb
+
+COPY ./services/package.json .
+COPY ./services/yarn.lock .
+COPY ./services/packages/shared/package.json ./packages/shared/
+COPY ./services/packages/db/package.json ./packages/db/
+COPY ./services/packages/auth/package.json ./packages/auth/
+
+RUN yarn install
+
+RUN yarn add typescript -W
+
+# Build
+RUN yarn workspace @san/shared run build
+RUN yarn workspace @san/db run build
+RUN yarn workspace auth run build
+# RUN yarn --cwd ~/services/packages/db build
+RUN yarn --cwd ~/services/packages/auth build
+
+# COPY ./packages/shared/dist ./packages/shared/dist
+# COPY ./packages/db/dist ./packages/db/dist
+# COPY ./packages/auth/dist ./packages/auth/dist
+
+WORKDIR /abb/packages/auth
+
+ENV NODE_ENV production
+
+EXPOSE 4000
+
+CMD ["node", "dist/index.js"]

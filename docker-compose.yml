@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  auth-app:
+    build:
+      context: ./
+      # dockerfile: ./services/packages/auth/Dockerfile
+      dockerfile: ./services/packages/auth/Dockerfile5
+
+      # context: ./services/packages/auth
+    container_name: authserver
+    hostname: authserver
+    ports:
+      - "4000:4000"
